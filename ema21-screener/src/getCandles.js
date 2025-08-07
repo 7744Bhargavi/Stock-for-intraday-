@@ -1,5 +1,5 @@
-const apiKey = "YOUR_DHAN_CLIENT_ID";
-const accessToken = "YOUR_DHAN_ACCESS_TOKEN";
+const apiKey = "1102604841";
+const accessToken = "eyJ0eXAiOiJK..."; // ← yaha tu apna full token paste kare
 
 const getCandles = async (symbol, exchange = "NSE") => {
   const exchangeSegment = exchange === "BSE" ? "BSE_EQ" : "NSE_EQ";
@@ -23,3 +23,4 @@ const getCandles = async (symbol, exchange = "NSE") => {
 };
 
 export default getCandles;
+      

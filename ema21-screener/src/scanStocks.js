@@ -3,26 +3,27 @@ import checkCrossover from "./checkCrossover";
 import stockList from "./stockList";
 
 const scanStocks = async () => {
-  const crossedStocks = [];
+  const crossedStocks = [];
 
-  for (const stock of stockList) {
-    try {
-      const candles = await getCandles(stock.symbol, stock.exchange);
-      const result = checkCrossover(candles);
+  for (const stock of stockList) {
+    try {
+      console.log(`🔍 Scanning ${stock.symbol}`);
+      const candles = await getCandles(stock.symbol, stock.exchange);
+      const result = checkCrossover(candles);
 
-      if (result) {
-        crossedStocks.push({
-          symbol: stock.symbol,
-          exchange: stock.exchange,
-          direction: result,
-        });
-      }
-    } catch (error) {
-      console.error(`Error scanning ${stock.symbol}:`, error.message);
-    }
-  }
+      if (result) {
+        crossedStocks.push({
+          symbol: stock.symbol,
+          exchange: stock.exchange,
+          direction: result,
+        });
+      }
+    } catch (error) {
+      console.error(`❌ Error scanning ${stock.symbol}:`, error.message);
+    }
+  }
 
-  return crossedStocks;
+  return crossedStocks;
 };
 
 export default scanStocks;

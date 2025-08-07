@@ -1,20 +1,23 @@
-function calculateEMA(data, period) {
-  if (!Array.isArray(data) || data.length === 0) return [];
+// EMA Calculation function
+export function calculateEMA(data, period) {
+  if (!Array.isArray(data) || data.length < period) {
+    return [];
+  }
 
   const k = 2 / (period + 1);
   let emaArray = [];
-  let ema = data[0]; // start from first close
 
-  data.forEach((price, index) => {
-    if (index === 0) {
-      emaArray.push(price);
-    } else {
-      ema = price * k + ema * (1 - k);
-      emaArray.push(ema);
-    }
-  });
+  // First EMA as SMA
+  let sma =
+    data
+      .slice(0, period)
+      .reduce((sum, value) => sum + value, 0) / period;
+  emaArray[period - 1] = sma;
+
+  // Rest EMA values
+  for (let i = period; i < data.length; i++) {
+    emaArray[i] = data[i] * k + emaArray[i - 1] * (1 - k);
+  }
 
   return emaArray;
-}
-
-export default calculateEMA; // << IMPORTANT
+    }

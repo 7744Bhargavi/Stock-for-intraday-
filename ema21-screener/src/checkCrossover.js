@@ -1,7 +1,7 @@
 import { calculateEMA } from "./emaCalculator";
 
 // Function to check EMA 21 crossover
-export function checkCrossover(candles) {
+function checkCrossover(candles) {
   if (!candles || candles.length < 24) return null;
 
   // Close prices array
@@ -29,3 +29,5 @@ export function checkCrossover(candles) {
 
   return null; // No crossover
 }
+
+export default checkCrossover;

@@ -1,49 +1,70 @@
-import React, { useState } from "react";
-import { calculateEMA } from "./utils/emaCalculator";
+import React, { useEffect, useState } from "react";
+import stockList from "./stockList";
+import getCandles from "./getCandles";
+import { calculateEMA } from "./emaCalculator";
+import checkCrossover from "./checkCrossover";
 
 function App() {
-  const [result, setResult] = useState([]);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
-    try {
-      const response = await fetch("https://api.dhan.co/v2/market-feed", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "access-token": "YOUR_DHAN_ACCESS_TOKEN"
-        },
-        body: JSON.stringify({
-          symbols: ["NSE:TCS-EQ"], // Example stock
-          exchangeSegment: "NSE_EQ"
-        })
-      });
+  useEffect(() => {
+    async function scanStocks() {
+      let foundStocks = [];
 
-      const json = await response.json();
-      console.log("API Data:", json);
+      for (let stock of stockList) {
+        try {
+          const candles = await getCandles(stock, "5m", 50); // last 50 candles, 5 min timeframe
+          if (!candles || candles.length < 21) continue;
 
-      // Example: Replace with your candle data array from API
-      const candleData = [
-        { close: 3500 },
-        { close: 3510 },
-        { close: 3490 },
-        { close: 3520 }
-      ];
+          const closes = candles.map(c => c.close);
+          const ema21 = calculateEMA(closes, 21);
 
-      const emaData = calculateEMA(candleData, 21);
-      setResult(emaData);
+          const signal = checkCrossover(candles, ema21);
+          if (signal) {
+            foundStocks.push({
+              stock,
+              signal
+            });
+          }
+        } catch (error) {
+          console.error(`Error scanning ${stock}`, error);
+        }
+      }
 
-    } catch (error) {
-      console.error("Error fetching data:", error);
+      setResults(foundStocks);
+      setLoading(false);
     }
-  };
+
+    scanStocks();
+  }, []);
 
   return (
-    <div>
-      <h1>EMA 21 Screener</h1>
-      <button onClick={fetchData}>Scan Now</button>
-      <pre>{JSON.stringify(result, null, 2)}</pre>
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h1>EMA 21 Screener (5m)</h1>
+      {loading ? (
+        <p>Scanning stocks...</p>
+      ) : results.length > 0 ? (
+        <ul>
+          {results.map((item, index) => (
+            <li key={index}>
+              {item.stock} —{" "}
+              <span
+                style={{
+                  color: item.signal === "bullish" ? "green" : "red"
+                }}
+              >
+                {item.signal.toUpperCase()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No signals found.</p>
+      )}
     </div>
   );
 }
 
 export default App;
+      

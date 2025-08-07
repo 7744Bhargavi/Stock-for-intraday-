@@ -1,23 +1,26 @@
-// EMA Calculation function
-export function calculateEMA(data, period) {
-  if (!Array.isArray(data) || data.length < period) {
-    return [];
-  }
+// Function to calculate EMA for given period
+export function calculateEMA(prices, period) {
+  if (!prices || prices.length < period) return [];
 
   const k = 2 / (period + 1);
   let emaArray = [];
+  let sum = 0;
 
-  // First EMA as SMA
-  let sma =
-    data
-      .slice(0, period)
-      .reduce((sum, value) => sum + value, 0) / period;
-  emaArray[period - 1] = sma;
+  // First EMA = SMA of first 'period' prices
+  for (let i = 0; i < period; i++) {
+    sum += prices[i];
+    emaArray.push(null); // No EMA for first 'period - 1' candles
+  }
 
-  // Rest EMA values
-  for (let i = period; i < data.length; i++) {
-    emaArray[i] = data[i] * k + emaArray[i - 1] * (1 - k);
+  let emaPrev = sum / period;
+  emaArray[period - 1] = emaPrev;
+
+  // Calculate EMA for rest
+  for (let i = period; i < prices.length; i++) {
+    const ema = (prices[i] - emaPrev) * k + emaPrev;
+    emaArray.push(ema);
+    emaPrev = ema;
   }
 
   return emaArray;
-    }
+}

@@ -1,20 +1,31 @@
-import calculateEMA from "./emaCalculator";
+import { calculateEMA } from "./emaCalculator";
 
-const checkCrossover = (candles, emaPeriod = 21) => {
-  if (!Array.isArray(candles) || candles.length < emaPeriod) return null;
+// Function to check EMA 21 crossover
+export function checkCrossover(candles) {
+  if (!candles || candles.length < 24) return null;
 
-  const closes = candles.map(c => c.close);
-  const ema = calculateEMA(closes, emaPeriod);
+  // Close prices array
+  const closePrices = candles.map(candle => candle.close);
 
-  const lastClose = closes[closes.length - 1];
-  const prevClose = closes[closes.length - 2];
-  const lastEMA = ema[ema.length - 1];
-  const prevEMA = ema[ema.length - 2];
+  // Calculate EMA 21
+  const ema21 = calculateEMA(closePrices, 21);
 
-  if (prevClose < prevEMA && lastClose > lastEMA) return "bullish";
-  if (prevClose > prevEMA && lastClose < lastEMA) return "bearish";
+  const lastIndex = candles.length - 1;
+  const prevIndex = lastIndex - 1;
 
-  return null;
-};
+  const lastClose = closePrices[lastIndex];
+  const prevClose = closePrices[prevIndex];
 
-export default checkCrossover;
+  const lastEMA = ema21[lastIndex];
+  const prevEMA = ema21[prevIndex];
+
+  // Crossover detection
+  if (prevClose < prevEMA && lastClose > lastEMA) {
+    return "bullish"; // Crossed from below
+  }
+  if (prevClose > prevEMA && lastClose < lastEMA) {
+    return "bearish"; // Crossed from above
+  }
+
+  return null; // No crossover
+}

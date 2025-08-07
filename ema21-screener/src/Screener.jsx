@@ -1,85 +1,104 @@
-import React, { useState } from "react";
-import calculateEMA from "./calculateEMA";
+import React, { useState, useEffect } from "react";
+import calculateEMA from "./emaCalculator"; // Fixed file name
 
 const Screener = () => {
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [stocks, setStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dummy candle data for demo mode
-  const demoCandles = [
-    { close: 100 },
-    { close: 102 },
-    { close: 104 },
-    { close: 103 },
-    { close: 105 },
-    { close: 110 }, // crossover candle
+  const stockList = [
+    "RELIANCE",
+    "TCS",
+    "INFY",
+    "HDFCBANK",
+    "ICICIBANK",
+    "SBIN",
+    "HINDUNILVR",
+    "ITC",
+    "KOTAKBANK",
+    "BHARTIARTL",
+    // Baaki stocks yaha add kar sakta hai...
   ];
-
-  const stockList = ["DEMO1", "DEMO2", "DEMO3"];
 
   const fetchStockData = async (symbol) => {
     try {
-      const url = `https://api.dhan.co/charts/intraday?symbol=${symbol}&interval=5`;
-      const res = await fetch(url, {
-        headers: { Authorization: "Bearer YOUR_ACCESS_TOKEN" },
-      });
-      const data = await res.json();
-
-      // If API failed or returned empty data, use demoCandles
-      if (!data || !data.candles || data.candles.length === 0) {
-        console.log(`Market closed - Using demo data for ${symbol}`);
-        return demoCandles;
-      }
-
-      return data.candles.map((candle) => ({
-        close: candle[4], // Close price
-      }));
+      const response = await fetch(
+        `https://api.dhan.co/v2/market-feed/quotes?symbol=${symbol}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer YOUR_DHAN_ACCESS_TOKEN",
+            "Client-Id": "YOUR_DHAN_CLIENT_ID",
+          },
+        }
+      );
+      const data = await response.json();
+      return data;
     } catch (error) {
-      console.log(`Error fetching ${symbol} - Using demo data`);
-      return demoCandles;
+      console.error(`Error fetching ${symbol}:`, error);
+      return null;
     }
   };
 
   const scanStocks = async () => {
-    setLoading(true);
-    let crossedStocks = [];
+    let results = [];
 
-    for (let stock of stockList) {
-      const candles = await fetchStockData(stock);
-      const closes = candles.map((c) => c.close);
-      const ema21 = calculateEMA(closes, 21);
+    for (let symbol of stockList) {
+      const data = await fetchStockData(symbol);
 
-      const lastClose = closes[closes.length - 1];
-      const lastEMA = ema21[ema21.length - 1];
-      const prevClose = closes[closes.length - 2];
-      const prevEMA = ema21[ema21.length - 2];
+      if (data && data.candles) {
+        const ema21 = calculateEMA(data.candles.map((c) => c.close), 21);
+        const lastPrice = data.candles[data.candles.length - 1].close;
 
-      if (prevClose < prevEMA && lastClose > lastEMA) {
-        crossedStocks.push({ stock, type: "Bullish" });
-      } else if (prevClose > prevEMA && lastClose < lastEMA) {
-        crossedStocks.push({ stock, type: "Bearish" });
+        if (
+          lastPrice > ema21[ema21.length - 1] &&
+          data.candles[data.candles.length - 2].close < ema21[ema21.length - 2]
+        ) {
+          results.push({ symbol, signal: "Bullish Crossover" });
+        }
+
+        if (
+          lastPrice < ema21[ema21.length - 1] &&
+          data.candles[data.candles.length - 2].close > ema21[ema21.length - 2]
+        ) {
+          results.push({ symbol, signal: "Bearish Crossover" });
+        }
       }
     }
 
-    setResults(crossedStocks);
+    setStocks(results);
     setLoading(false);
   };
 
-  return (
-    <div>
-      <button onClick={scanStocks} disabled={loading}>
-        {loading ? "Scanning..." : "Scan Now"}
-      </button>
+  useEffect(() => {
+    scanStocks();
+    const interval = setInterval(scanStocks, 60000); // 1 min refresh
+    return () => clearInterval(interval);
+  }, []);
 
-      <ul>
-        {results.map((r, i) => (
-          <li key={i}>
-            {r.stock} - {r.type} Crossover
-          </li>
-        ))}
-      </ul>
+  return (
+    <div className="p-4 bg-gray-900 text-white min-h-screen">
+      <h1 className="text-xl font-bold mb-4">EMA 21 Screener</h1>
+      {loading ? (
+        <p>Scanning stocks...</p>
+      ) : (
+        <ul>
+          {stocks.map((stock, index) => (
+            <li key={index} className="mb-2">
+              {stock.symbol} -{" "}
+              <span
+                className={
+                  stock.signal.includes("Bullish") ? "text-green-400" : "text-red-400"
+                }
+              >
+                {stock.signal}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
 
 export default Screener;
+          
